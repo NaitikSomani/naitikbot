@@ -6,6 +6,7 @@ import mplfinance as mpf
 import io
 import asyncio
 import matplotlib.dates as mdates  # Added to handle datetime formatting for matplotlib
+import telebot
 
 try:
     from telegram import Update
