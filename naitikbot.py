@@ -183,3 +183,21 @@ if __name__ == "__main__":
 from flask import Flask
 
 app = Flask(__name__)  # ✅ THIS must exist
+bot = telebot.TeleBot("7663257272:AAHR20ai1-4WQme-GYzazQ9QjhVr4biOb3c")
+
+@app.route('/')
+def index():
+    return "Bot is running!"
+
+@app.route('/set_webhook')
+def set_webhook():
+    bot.remove_webhook()
+    bot.set_webhook(url="https://your-app-name.onrender.com/" + "YOUR_BOT_TOKEN")
+    return "Webhook set"
+
+@app.route(f"/{bot.token}", methods=['POST'])
+def webhook():
+    json_str = request.get_data().decode('UTF-8')
+    update = telebot.types.Update.de_json(json_str)
+    bot.process_new_updates([update])
+    return '', 200
