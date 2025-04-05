@@ -13,25 +13,29 @@ app = Flask(__name__)
 # === Telegram Message Handler ===
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
-    print(f"✅ Received message: {message.text}")  # Debug log
-
-    symbol = message.text.strip().upper()
-    if not (symbol.endswith(".NS") or symbol.endswith(".BO")):
-        symbol += ".NS"
-
     try:
+        print(f"✅ Received message: {message.text}")  # Log incoming messages
+
+        symbol = message.text.strip().upper()
+        if not (symbol.endswith(".NS") or symbol.endswith(".BO")):
+            symbol += ".NS"
+
         df = yf.Ticker(symbol).history(period="1d")
         if df.empty:
-            raise ValueError("No data found.")
+            bot.reply_to(message, f"⚠️ No data found for {symbol}")
+            return
+
         price = df["Close"].iloc[-1]
         bot.reply_to(message, f"📈 *{symbol}*\nCurrent Price: ₹{price:.2f}", parse_mode="Markdown")
-    except Exception as e:
-        bot.reply_to(message, f"⚠️ Error: {str(e)}")
 
-# === Routes ===
+    except Exception as e:
+        print("❌ Error:", e)
+        bot.reply_to(message, f"❌ Error: {e}")
+
+# === Web Routes ===
 @app.route('/')
 def home():
-    return "Bot is live!"
+    return "Bot is running!"
 
 @app.route('/set_webhook')
 def set_webhook():
@@ -42,11 +46,12 @@ def set_webhook():
 
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
-    update = telebot.types.Update.de_json(request.stream.read().decode("utf-8"))
+    json_data = request.get_data().decode("utf-8")
+    update = telebot.types.Update.de_json(json_data)
     bot.process_new_updates([update])
     return "OK", 200
 
-# === Run App ===
+# === Start Flask App ===
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
