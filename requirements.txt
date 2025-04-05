@@ -1,5 +1,7 @@
-python-telegram-bot
+Flask
+python-telegram-bot==20.0
 yfinance
 pandas
-ta
 matplotlib
+mplfinance
+nest_asyncio
