@@ -6,3 +6,4 @@ matplotlib
 mplfinance
 nest_asyncio
 gunicorn
+pyTelegramBotAPI
