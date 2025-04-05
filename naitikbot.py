@@ -65,22 +65,35 @@ def get_support_resistance(df):
     recent_data = df[-20:]
     support = recent_data['Low'].min()
     resistance = recent_data['High'].max()
-    support_date = df.index[-1].strftime('%Y-%m-%d')  # Always use the latest date
+    support_date = df[df['Low'] == support].index[-1].strftime('%Y-%m-%d')
     return support, resistance, support_date
 
 # Generate Candlestick Chart
 
 def generate_chart(symbol, df):
     support, resistance, support_date = get_support_resistance(df)
+    close = df['Close'].iloc[-1]
     mc = mpf.make_marketcolors(up='g', down='r', edge='black', wick='black', volume='gray')
     s = mpf.make_mpf_style(marketcolors=mc)
     fig, ax = mpf.plot(df[-100:], type='candle', style=s, volume=True, returnfig=True)
+
+    # Support and Resistance
     ax[0].axhline(y=support, color='blue', linestyle='--', label='Support')
     ax[0].axhline(y=resistance, color='red', linestyle='--', label='Resistance')
+
+    # CMP Line
+    ax[0].axhline(y=close, color='green', linestyle='--', label='CMP')
+
+    # Support label
     x_pos = mdates.date2num(df.index[0])
     y_pos = support
-    label = f"{support_date} - ₹{support:.2f}"
-    ax[0].text(x_pos, y_pos, label, verticalalignment='bottom', horizontalalignment='left', color='blue')
+    support_label = f"{support_date} - ₹{support:.2f}"
+    ax[0].text(x_pos, y_pos, support_label, verticalalignment='bottom', horizontalalignment='left', color='blue')
+
+    # CMP label
+    cmp_label = f"CMP - ₹{close:.2f}"
+    ax[0].text(x_pos, close, cmp_label, verticalalignment='bottom', horizontalalignment='left', color='green')
+
     buf = io.BytesIO()
     fig.savefig(buf, format='png')
     buf.seek(0)
@@ -113,6 +126,7 @@ def generate_analysis(symbol, df):
     zone = "Super Strong Zone" if close < support else "Strong Zone" if close < ema100 else "Weak Zone"
 
     analysis = f"\U0001F4CA Stock Analysis for {symbol}\n"
+    analysis += f"\n💰 CMP: ₹{close:.2f}"
     analysis += f"\n\U0001F7E2 Trend: {trend}"
     analysis += f"\n\U0001F4C9 RSI: {rsi:.2f} ({rsi_signal})"
     analysis += f"\n\U0001F4C8 MACD: {macd:.2f}, Signal: {macd_signal:.2f} ({macd_signal_text})"
