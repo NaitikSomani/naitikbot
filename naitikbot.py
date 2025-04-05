@@ -180,3 +180,6 @@ if __name__ == "__main__":
             loop.run_until_complete(main())
         else:
             raise
+from flask import Flask
+
+app = Flask(__name__)  # ✅ THIS must exist
