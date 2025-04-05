@@ -48,3 +48,7 @@ def webhook():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+@bot.message_handler(func=lambda message: True)
+def echo_all(message):
+    print("Received a message!")
+    bot.reply_to(message, f"Received: {message.text}")
