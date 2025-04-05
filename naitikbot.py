@@ -13,6 +13,8 @@ app = Flask(__name__)
 # === Telegram Message Handler ===
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
+    print(f"✅ Received message: {message.text}")  # Debug log
+
     symbol = message.text.strip().upper()
     if not (symbol.endswith(".NS") or symbol.endswith(".BO")):
         symbol += ".NS"
@@ -48,7 +50,3 @@ def webhook():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-@bot.message_handler(func=lambda message: True)
-def echo_all(message):
-    print("Received a message!")
-    bot.reply_to(message, f"Received: {message.text}")
