@@ -193,7 +193,7 @@ def index():
 @app.route('/set_webhook')
 def set_webhook():
     bot.remove_webhook()
-    bot.set_webhook(url="https://your-app-name.onrender.com/" + "YOUR_BOT_TOKEN")
+    bot.set_webhook(url="https://naitikbot.onrender.com/" + "7663257272:AAHR20ai1-4WQme-GYzazQ9QjhVr4biOb3c")
     return "Webhook set"
 
 @app.route(f"/{bot.token}", methods=['POST'])
