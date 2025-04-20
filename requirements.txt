@@ -7,3 +7,4 @@ mplfinance
 nest_asyncio
 gunicorn
 pyTelegramBotAPI
+uvicorn
