@@ -138,7 +138,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Main bot setup
 async def main():
-    TOKEN = os.getenv("7663257272:AAHR20ai1-4WQme-GYzazQ9QjhVr4biOb3c")
+    TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
     if not TOKEN:
         print("⚠️ TELEGRAM_BOT_TOKEN is not loaded from environment.")
         raise RuntimeError("TELEGRAM_BOT_TOKEN not set in environment variables.")
