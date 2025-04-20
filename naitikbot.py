@@ -1,5 +1,6 @@
-import os
+# The following code is tailored for deployment on Render.com
 import logging
+import os
 import yfinance as yf
 import pandas as pd
 import mplfinance as mpf
@@ -11,32 +12,33 @@ from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
 
 # Logging
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# Indicators
+# Fallback indicators
 def compute_indicators(df):
-    df['EMA20'] = df['Close'].ewm(span=20).mean()
-    df['EMA50'] = df['Close'].ewm(span=50).mean()
-    df['EMA100'] = df['Close'].ewm(span=100).mean()
+    df['EMA20'] = df['Close'].ewm(span=20, adjust=False).mean()
+    df['EMA50'] = df['Close'].ewm(span=50, adjust=False).mean()
+    df['EMA100'] = df['Close'].ewm(span=100, adjust=False).mean()
 
+    # RSI
     delta = df['Close'].diff()
     gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
     loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
     rs = gain / loss
     df['RSI'] = 100 - (100 / (1 + rs))
 
-    exp1 = df['Close'].ewm(span=12).mean()
-    exp2 = df['Close'].ewm(span=26).mean()
+    # MACD
+    exp1 = df['Close'].ewm(span=12, adjust=False).mean()
+    exp2 = df['Close'].ewm(span=26, adjust=False).mean()
     df['MACD'] = exp1 - exp2
-    df['MACD_Signal'] = df['MACD'].ewm(span=9).mean()
+    df['MACD_Signal'] = df['MACD'].ewm(span=9, adjust=False).mean()
 
+    # Bollinger Bands
     df['BB_Middle'] = df['Close'].rolling(window=20).mean()
     df['BB_Upper'] = df['BB_Middle'] + 2 * df['Close'].rolling(window=20).std()
     df['BB_Lower'] = df['BB_Middle'] - 2 * df['Close'].rolling(window=20).std()
 
+    # Stochastic Oscillator
     low_min = df['Low'].rolling(window=14).min()
     high_max = df['High'].rolling(window=14).max()
     df['%K'] = 100 * ((df['Close'] - low_min) / (high_max - low_min))
@@ -44,30 +46,36 @@ def compute_indicators(df):
 
     return df
 
+# Fetch stock data
 def get_stock_data(symbol):
-    df = yf.download(symbol, period='6mo')
+    stock = yf.Ticker(symbol)
+    df = stock.history(period='6mo')
     if df.empty:
         raise ValueError("No data found for the symbol.")
     df = compute_indicators(df)
     return df
 
+# Identify Support & Resistance
 def get_support_resistance(df):
-    recent = df[-20:]
-    support = recent['Low'].min()
-    resistance = recent['High'].max()
+    recent_data = df[-20:]
+    support = recent_data['Low'].min()
+    resistance = recent_data['High'].max()
     support_date = df[df['Low'] == support].index[-1].strftime('%Y-%m-%d')
     return support, resistance, support_date
 
+# Generate Candlestick Chart
 def generate_chart(symbol, df):
     support, resistance, support_date = get_support_resistance(df)
     close = df['Close'].iloc[-1]
-    mc = mpf.make_marketcolors(up='g', down='r')
+    mc = mpf.make_marketcolors(up='g', down='r', edge='black', wick='black', volume='gray')
     s = mpf.make_mpf_style(marketcolors=mc)
     fig, ax = mpf.plot(df[-100:], type='candle', style=s, volume=True, returnfig=True)
 
-    ax[0].axhline(y=support, color='blue', linestyle='--')
-    ax[0].axhline(y=resistance, color='red', linestyle='--')
-    ax[0].axhline(y=close, color='green', linestyle='--')
+    # Support and Resistance
+    ax[0].axhline(y=support, color='blue', linestyle='--', label='Support')
+    ax[0].axhline(y=resistance, color='red', linestyle='--', label='Resistance')
+    ax[0].axhline(y=close, color='green', linestyle='--', label='CMP')
+
     x_pos = mdates.date2num(df.index[0])
     ax[0].text(x_pos, support, f"{support_date} - ₹{support:.2f}", color='blue')
     ax[0].text(x_pos, close, f"CMP - ₹{close:.2f}", color='green')
@@ -77,6 +85,7 @@ def generate_chart(symbol, df):
     buf.seek(0)
     return buf
 
+# Create Stock Analysis Summary
 def generate_analysis(symbol, df):
     close = df['Close'].iloc[-1]
     ema20 = df['EMA20'].iloc[-1]
@@ -113,6 +122,7 @@ def generate_analysis(symbol, df):
         f"\n\n\U0001F4DD Conclusion: {zone}"
     )
 
+# Handle user messages
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     symbol = update.message.text.strip().upper()
     if not (symbol.endswith(".NS") or symbol.endswith(".BO")):
@@ -125,6 +135,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"⚠️ Error analyzing '{symbol}': {str(e)}")
 
+# Main bot setup
 async def main():
     TOKEN = os.environ.get("7663257272:AAHR20ai1-4WQme-GYzazQ9QjhVr4biOb3c")
     if not TOKEN:
