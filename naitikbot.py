@@ -152,17 +152,19 @@ async def main():
     await application.run_polling()
 
 if __name__ == "__main__":
-    try:
-        import nest_asyncio
-        nest_asyncio.apply()
-    except ImportError:
-        pass
+    import asyncio
+    from telegram.ext import Application
 
-    try:
-        asyncio.run(main())
-    except RuntimeError as e:
-        if "already running" in str(e):
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(main())
-        else:
-            raise
+    TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+    if not TOKEN:
+        print("⚠️ TELEGRAM_BOT_TOKEN is not loaded from environment.")
+        raise RuntimeError("TELEGRAM_BOT_TOKEN not set in environment variables.")
+    else:
+        print("✅ TELEGRAM_BOT_TOKEN successfully loaded.")
+
+    application = Application.builder().token(TOKEN).build()
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    print("🚀 Bot is starting with polling...")
+    application.run_polling()
+
