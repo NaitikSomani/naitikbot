@@ -1,11 +1,11 @@
-# The following code is tailored for deployment on Render.com
+# The following code is tailored for Render.com with polling
 import logging
-import os
 import yfinance as yf
 import pandas as pd
 import mplfinance as mpf
 import io
 import asyncio
+import os
 import matplotlib.dates as mdates
 
 from telegram import Update
@@ -71,7 +71,6 @@ def generate_chart(symbol, df):
     s = mpf.make_mpf_style(marketcolors=mc)
     fig, ax = mpf.plot(df[-100:], type='candle', style=s, volume=True, returnfig=True)
 
-    # Support and Resistance
     ax[0].axhline(y=support, color='blue', linestyle='--', label='Support')
     ax[0].axhline(y=resistance, color='red', linestyle='--', label='Resistance')
     ax[0].axhline(y=close, color='green', linestyle='--', label='CMP')
@@ -125,6 +124,7 @@ def generate_analysis(symbol, df):
 # Handle user messages
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     symbol = update.message.text.strip().upper()
+    print(f"📩 Received message: {symbol}")
     if not (symbol.endswith(".NS") or symbol.endswith(".BO")):
         symbol += ".NS"
     try:
@@ -133,16 +133,22 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         analysis = generate_analysis(symbol, df)
         await update.message.reply_photo(photo=chart, caption=analysis)
     except Exception as e:
+        logging.error(f"Error analyzing '{symbol}': {e}")
         await update.message.reply_text(f"⚠️ Error analyzing '{symbol}': {str(e)}")
 
 # Main bot setup
 async def main():
-    TOKEN = os.environ.get("7663257272:AAHR20ai1-4WQme-GYzazQ9QjhVr4biOb3c")
+    TOKEN = os.getenv("7663257272:AAHR20ai1-4WQme-GYzazQ9QjhVr4biOb3c")
     if not TOKEN:
+        print("⚠️ TELEGRAM_BOT_TOKEN is not loaded from environment.")
         raise RuntimeError("TELEGRAM_BOT_TOKEN not set in environment variables.")
+    else:
+        print("✅ TELEGRAM_BOT_TOKEN successfully loaded.")
 
     application = Application.builder().token(TOKEN).build()
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    print("🚀 Bot is starting with polling...")
     await application.run_polling()
 
 if __name__ == "__main__":
